@@ -3,3 +3,4 @@ pandas
 plotly
 openpyxl
 datetime
+matplotlib>=3.0
