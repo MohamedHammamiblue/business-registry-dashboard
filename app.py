@@ -97,7 +97,7 @@ st.markdown("""
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_excel("C:/Users/Lenovo/Desktop/github/statistiques_operations_2024_2025.xlsx")
+        df = pd.read_excel("statistiques_operations_2024_2025.xlsx")
         
         # Data cleaning and validation
         df = df.dropna(how='all')  # Remove completely empty rows
@@ -115,7 +115,7 @@ df = load_data()
 # 🎛️ SIDEBAR - FILTERS & NAVIGATION
 # ============================================
 with st.sidebar:
-    st.image("C:/Users/Lenovo/Desktop/logo.png", width=200)  # Adjust width as needed
+    st.image("logo.png", width=200)  # Adjust width as needed
     st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
     st.markdown("### 🏢 Business Registry Dashboard")
     st.markdown("</div>", unsafe_allow_html=True)
