@@ -195,7 +195,7 @@ if page == "📋 Data Overview":
                 <div class="metric-card" dir="rtl">
                     <h3 style='color: var(--primary);'>📈 التغيير السنوي</h3>
                     <h2 style='margin: 10px 0; color: {'#27ae60' if change_pct >=0 else '#e74c3c'}'>
-                        {change_pct:.1f}% {'↑' if change_pct >=0 else '↓'}
+                        {abs(change_pct):.1f}% {'↑' if change_pct >=0 else '-↓'}
                     </h2>
                     <p style='color: #7f8c8d; font-size: 0.9em;'>مقارنة بالسنة السابقة</p>
                 </div>
@@ -576,13 +576,13 @@ elif page == "📌 Executive Summary":
         df_for_summary = df.iloc[:-1] if 'مجموع' in df.iloc[-1]['نوع العملية'] else df
         
         # Calculate KPIs from filtered data (excluding last row)
-        total_2024 = df_for_summary['2024 العدد'].sum()
-        total_2025 = df_for_summary['2025 العدد'].sum()
+        total_2024 = df.drop([5,8, 15])['2024 العدد'].sum()  # Rows 6 and 16 (subtract 1 for 0-based index)
+        total_2025 = df.drop([5,8, 15])['2025 العدد'].sum()
         change_pct = ((total_2025 - total_2024) / total_2024) * 100 if total_2024 != 0 else 0
         
         # Get creation and update metrics
-        creation_ops = [op for op in df_for_summary['نوع العملية'].unique() if 'تأسيس' in op or 'إنشاء' in op]
-        update_ops = [op for op in df_for_summary['نوع العملية'].unique() if 'تحيين' in op or 'تحديث' in op]
+        creation_ops = [op for op in df_for_summary['نوع العملية'].unique() if 'طلب تأسيس' in op or 'إنشاء' in op]
+        update_ops = [op for op in df_for_summary['نوع العملية'].unique() if 'طلب عمليات' in op or 'تحديث' in op]
         
         df_creations = df_for_summary[df_for_summary['نوع العملية'].isin(creation_ops)]
         df_updates = df_for_summary[df_for_summary['نوع العملية'].isin(update_ops)]
@@ -611,7 +611,7 @@ elif page == "📌 Executive Summary":
         with col1:
             st.markdown(f"""
                 <div class="metric-card">
-                    <h3>📊 Total Operations</h3>
+                    <h3>📊 مجموع الخدمات</h3>
                     <h2>{total_2025:,}</h2>
                     <p style='color: {'#27ae60' if change_pct >=0 else '#e74c3c'}'>
                         {'↑' if change_pct >=0 else '↓'} {abs(change_pct):.1f}%
@@ -621,7 +621,7 @@ elif page == "📌 Executive Summary":
         with col2:
             st.markdown(f"""
                 <div class="metric-card">
-                    <h3>🏢 Business Creations</h3>
+                    <h3>🏢 مجموع التأسيس</h3>
                     <h2>{crea_2025:,}</h2>
                     <p style='color: {'#27ae60' if crea_change_pct >=0 else '#e74c3c'}'>
                         {'↑' if crea_change_pct >=0 else '↓'} {abs(crea_change_pct):.1f}%
@@ -631,7 +631,7 @@ elif page == "📌 Executive Summary":
         with col3:
             st.markdown(f"""
                 <div class="metric-card">
-                    <h3>🔄 Business Updates</h3>
+                    <h3>🔄 مجموع التحيين</h3>
                     <h2>{update_2025:,}</h2>
                     <p style='color: {'#27ae60' if update_change_pct >=0 else '#e74c3c'}'>
                         {'↑' if update_change_pct >=0 else '↓'} {abs(update_change_pct):.1f}%
@@ -641,7 +641,7 @@ elif page == "📌 Executive Summary":
         with col4:
             st.markdown(f"""
                 <div class="metric-card">
-                    <h3>📅 Yearly Comparison</h3>
+                    <h3>📅 التغيير السنوي</h3>
                     <h2>2024 → 2025</h2>
                     <p style='color: {'#27ae60' if (total_2025 > total_2024) else '#e74c3c'}'>
                         {'Growth' if (total_2025 > total_2024) else 'Decline'}
@@ -652,16 +652,16 @@ elif page == "📌 Executive Summary":
         st.markdown("---")
         
         # Comparison visualization
-        st.subheader("Year-over-Year Comparison")
+        st.subheader("التغيير السنوي للثلالثي الأول")
         fig = go.Figure()
         fig.add_trace(go.Bar(
-            x=['Total Operations', 'Business Creations', 'Business Updates'],
+            x=[' إجمالي العمليات', 'التأسيس', 'التحيين'],
             y=[total_2024, crea_2024, update_2024],
             name='2024',
             marker_color='#3498db'
         ))
         fig.add_trace(go.Bar(
-            x=['Total Operations', 'Business Creations', 'Business Updates'],
+            x=[' إجمالي العمليات', 'التأسيس', 'التحيين'],
             y=[total_2025, crea_2025, update_2025],
             name='2025',
             marker_color='#2c3e50'
@@ -669,7 +669,7 @@ elif page == "📌 Executive Summary":
         fig.update_layout(
             barmode='group',
             title="<b>Key Metrics Comparison</b>",
-            yaxis_title="Number of Operations",
+            yaxis_title="عدد العمليات",
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)'
         )
@@ -677,49 +677,56 @@ elif page == "📌 Executive Summary":
         
         # Top operations visualization
         st.markdown("---")
-        st.subheader("Top Operations in 2025")
+        st.subheader("أهم العمليات في 2025")
         fig = px.bar(
             top_ops,
             x='نوع العملية',
             y='2025 العدد',
-            title="<b>Top 5 Operations by Volume</b>",
+            title="<b>أعلى 5 عمليات حسب الحجم</b>",
             color='2025 العدد',
             color_continuous_scale='Blues',
-            labels={'2025 العدد': 'Number of Operations', 'نوع العملية': 'Operation Type'}
+            labels={'2025 العدد': 'الحجم', 'نوع العملية': 'Operation Type'}
         )
         fig.update_layout(
-            xaxis_title="Operation Type",
-            yaxis_title="Number of Operations",
+            xaxis_title="نوع العملية",
+            yaxis_title="الحجم",
             showlegend=False
         )
         st.plotly_chart(fig, use_container_width=True)
         
         # Key insights section
         st.markdown("---")
-        st.subheader("Key Insights")
+        st.subheader("Key Insights الرؤى الرئيسية")
         
         insight_col1, insight_col2 = st.columns(2)
         
         with insight_col1:
-            st.markdown("""
-                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #3498db;'>
-                    <h4 style='color: #2c3e50; margin-top: 0;'>📈 Growth Trends</h4>
-                    <ul>
-                        <li>Overall operations changed by <strong>{:.1f}%</strong> year-over-year</li>
-                        <li>Business creations changed by <strong>{:.1f}%</strong></li>
-                        <li>Business updates changed by <strong>{:.1f}%</strong></li>
+            st.markdown(f"""
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; 
+                          border-left: 4px solid #3498db; text-align: right; direction: rtl;'>
+                    <h4 style='color: #2c3e50; margin-top: 0;'>📈 اتجاهات النمو</h4>
+                    <ul style='padding-right: 20px;'>
+                        <li>إجمالي العمليات تغيرت بنسبة <strong>{abs(change_pct):.1f}{"+" if change_pct >= 0 else "-" + "%"}</strong></li>
+                        <li>عمليات التأسيس تغيرت بنسبة <strong>{abs(crea_change_pct):.1f}{"+ %" if crea_change_pct >= 0 else "- %"}</strong></li>
+                        <li>عمليات التحيين تغيرت بنسبة <strong>{abs(update_change_pct):.1f}{"+" if update_change_pct >= 0 else "-" + "%"}</strong></li>
                     </ul>
                 </div>
-            """.format(change_pct, crea_change_pct, update_change_pct), unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
             
-        with insight_col2:
+    with insight_col2:
+        try:
+            # Safely get values with fallbacks
+            top_op_name = top_ops.iloc[0].get('نوع_العملية', 'غير متوفر')
+            top_op_count = top_ops.iloc[0].get('2025_العدد', 0)
+            
+            # Arabic Version (same styling)
             st.markdown("""
-                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #e74c3c;'>
-                    <h4 style='color: #2c3e50; margin-top: 0;'>📊 Operational Highlights</h4>
-                    <ul>
-                        <li>Top operation in 2025: <strong>{}</strong> with {:,} requests</li>
-                        <li>Most growth in: <strong>{}</strong> ({:.1f}%)</li>
-                        <li>Biggest decline in: <strong>{}</strong> ({:.1f}%)</li>
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #e74c3c; text-align: right; direction: rtl;'>
+                    <h4 style='color: #2c3e50; margin-top: 0;'>📊 النقاط البارزة</h4>
+                    <ul style='padding-right: 20px;'>
+                        <li>أعلى عملية في 2025: <strong>{}</strong> بعدد {:,} طلب</li>
+                        <li>أكبر زيادة في: <strong>{}</strong> ({:.1f}%)</li>
+                        <li>أكبر انخفاض في: <strong>{}</strong> ({:.1f}- %)</li>
                     </ul>
                 </div>
             """.format(
@@ -728,18 +735,21 @@ elif page == "📌 Executive Summary":
                 biggest_increase,
                 biggest_increase_pct,
                 biggest_decrease,
-                biggest_decrease_pct
+                abs(biggest_decrease_pct)
             ), unsafe_allow_html=True)
-    else:
-        st.error("No data available to display")
+    
+        except Exception as e:
+            st.error(f"Error displaying data: {str(e)}")
+else:
+    st.error("No data available to display")
 
 # ============================================
 # 🚀 FOOTER
 # ============================================
-st.markdown("""
+st.markdown(f"""
     <div style='text-align: center; margin-top: 40px; color: #7f8c8d; font-size: 0.9em;'>
         <hr style='border-top: 1px solid #ecf0f1;'>
-        <p>Business Registry Dashboard • </p>
-        <p>© {} CRNE •</p>
+        <p>Business Registry Dashboard </p>
+        <p>© {datetime.now().year} CRNE</p>
     </div>
-""".format(datetime.now().year), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
